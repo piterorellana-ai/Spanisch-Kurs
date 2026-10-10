@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spanisch Lernen - Grammatik & Übungen</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #0d9488;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            margin: 1rem;
+            position: relative;
+        }
+        .lang-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .lang-switch select {
+            padding: 0.3rem 0.5rem;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.85rem;
+            background: white;
+            cursor: pointer;
+        }
+        h1 { color: var(--primary); font-size: 1.6rem; text-align: center; margin-bottom: 0.3rem; }
+        .subtitle { text-align: center; color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1.2rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 0.95rem; }
+        button { background: var(--primary); color: white; border: none; padding: 0.85rem; width: 100%; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; margin-top: 1rem; transition: background 0.2s; }
+        button:hover { background: #1e40af; }
+        .hidden { display: none; }
+        .exercise-box { background: #f1f5f9; padding: 1.5rem; border-radius: 10px; margin-top: 1rem; }
+        .feedback { margin-top: 1rem; font-weight: bold; text-align: center; }
+        .correct { color: #16a34a; }
+        .incorrect { color: #dc2626; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Selector de Idioma de la Interfaz -->
+        <div class="lang-switch">
+            <select id="interface-lang" onchange="changeInterfaceLanguage()">
+                <option value="de">🇩🇪 Deutsch</option>
+                <option value="es">🇪🇸 Español</option>
+            </select>
+        </div>
+
+        <!-- PANTALLA DE ACCESO -->
+        <div id="login-screen">
+            <h1 id="txt-title">Spanisch Sprachakademie</h1>
+            <div class="subtitle" id="txt-subtitle">Interaktive Grammatikplattform</div>
+            
+            <div class="form-group">
+                <label for="access-code" id="lbl-code">Zugangsschlüssel (vom Lehrer bereitgestellt):</label>
+                <input type="password" id="access-code" placeholder="z. B. PROFE2026">
+            </div>
+            
+            <div class="form-group">
+                <label for="level-select" id="lbl-level">Wählen Sie Ihr Niveau:</label>
+                <select id="level-select">
+                    <option value="A1">Niveau A1 (Erklärungen auf Deutsch)</option>
+                    <option value="A2">Niveau A2 (Erklärungen auf Deutsch)</option>
+                    <option value="B1">Niveau B1 (Explicaciones en Español)</option>
+                    <option value="B2">Niveau B2 (Explicaciones en Español)</option>
+                    <option value="C1">Niveau C1 (Explicaciones en Español)</option>
+                </select>
+            </div>
+            
+            <button onclick="login()" id="btn-login">Kurs Betreten</button>
+        </div>
+
+        <!-- PANTALLA DE EJERCICIOS -->
+        <div id="app-screen" class="hidden">
+            <h1 id="app-title">Übungsmodul</h1>
+            <div id="explanation-box" style="background:#e0f2fe; padding:1rem; border-radius:8px; margin-bottom:1rem; font-size: 0.95rem;">
+                <!-- Explicación según nivel -->
+            </div>
+
+            <div class="exercise-box">
+                <h3 id="question-text">Frage wird geladen...</h3>
+                <div id="options-container">
+                    <!-- Respuestas o input -->
+                </div>
+                <button onclick="checkAnswer()" id="btn-check">Antwort Überprüfen</button>
+            </div>
+            <div id="feedback-message" class="feedback"></div>
+            <button onclick="logout()" id="btn-logout" style="background: #64748b; margin-top: 2rem;">Abmelden</button>
+        </div>
+    </div>
+
+    <script>
+        const VALID_KEY = "PROFE2026";
+        
+        // Diccionario de traducciones para la interfaz
+        const translations = {
+            de: {
+                title: "Spanisch Sprachakademie",
+                subtitle: "Interaktive Grammatikplattform",
+                lblCode: "Zugangsschlüssel (vom Lehrer bereitgestellt):",
+                lblLevel: "Wählen Sie Ihr Niveau:",
+                btnLogin: "Kurs Betreten",
+                btnCheck: "Antwort Überprüfen",
+                btnLogout: "Abmelden",
+                placeholderCode: "z. B. PROFE2026"
+            },
+            es: {
+                title: "Academia de Español",
+                subtitle: "Plataforma de Gramática Interactiva",
+                lblCode: "Clave de acceso (dada por el profesor):",
+                lblLevel: "Selecciona tu nivel:",
+                btnLogin: "Entrar al Curso",
+                btnCheck: "Comprobar Respuesta",
+                btnLogout: "Cerrar Sesión",
+                placeholderCode: "Ej. PROFE2026"
+            }
+        };
+
+        function changeInterfaceLanguage() {
+            const lang = document.getElementById("interface-lang").value;
+            const t = translations[lang];
+
+            document.getElementById("txt-title").innerText = t.title;
+            document.getElementById("txt-subtitle").innerText = t.subtitle;
+            document.getElementById("lbl-code").innerText = t.lblCode;
+            document.getElementById("lbl-level").innerText = t.lblLevel;
+            document.getElementById("btn-login").innerText = t.btnLogin;
+            document.getElementById("btn-check").innerText = t.btnCheck;
+            document.getElementById("btn-logout").innerText = t.btnLogout;
+            document.getElementById("access-code").placeholder = t.placeholderCode;
+        }
+
+        function login() {
+            const code = document.getElementById("access-code").value;
+            const level = document.getElementById("level-select").value;
+
+            if (code !== VALID_KEY) {
+                const currentLang = document.getElementById("interface-lang").value;
+                alert(currentLang === "de" ? "Falscher Schlüssel. Bitte fragen Sie Ihren Lehrer." : "Clave incorrecta. Solicítala a tu profesor.");
+                return;
+            }
+
+            document.getElementById("login-screen").classList.add("hidden");
+            document.getElementById("app-screen").classList.remove("hidden");
+
+            loadContent(level);
+        }
+
+        function loadContent(level) {
+            const titleElem = document.getElementById("app-title");
+            const explanationElem = document.getElementById("explanation-box");
+            const questionElem = document.getElementById("question-text");
+            const optionsContainer = document.getElementById("options-container");
+
+            titleElem.innerText = `Niveau ${level} - Grammatik`;
+            optionsContainer.innerHTML = "";
+
+            if (level === "A1" || level === "A2") {
+                explanationElem.innerHTML = `<strong>Grammatik-Erklärung (${level}):</strong> Das Präsens von regelmäßigen Verben auf -ar (z.B. <em>hablar</em>).<br><br>Endungen: <em>yo -o, tú -as, él/ella -a, nosotros -amos, vosotros -áis, ellos -an</em>.`;
+                questionElem.innerText = "Füllen Sie die Lücke aus: Yo (hablar) español.";
+                
+                optionsContainer.innerHTML = `
+                    <input type="text" id="user-answer" placeholder="Ihre Antwort hier...">
+                `;
+            } else {
+                explanationElem.innerHTML = `<strong>Explicación gramatical (${level}):</strong> Diferencia y uso de los pasados (Pretérito Indefinido vs. Pretérito Imperfecto).`;
+                questionElem.innerText = "Selecciona la opción correcta:";
+                
+                optionsContainer.innerHTML = `
+                    <label style="display:block; margin-bottom:0.5rem;"><input type="radio" name="opt" value="1"> Ayer cuando llegué, todos ya dormían.</label>
+                    <label style="display:block;"><input type="radio" name="opt" value="2"> Ayer cuando llegaba, todos ya durmieron.</label>
+                `;
+            }
+        }
+
+        function checkAnswer() {
+            const feedback = document.getElementById("feedback-message");
+            const lang = document.getElementById("interface-lang").value;
+            
+            feedback.innerText = lang === "de" ? "Richtig! Ausgezeichnete Arbeit." : "¡Correcto! Excelente trabajo.";
+            feedback.className = "feedback correct";
+        }
+
+        function logout() {
+            document.getElementById("app-screen").classList.add("hidden");
+            document.getElementById("login-screen").classList.remove("hidden");
+            document.getElementById("access-code").value = "";
+        }
+    </script>
+</body>
+</html>
