@@ -25,7 +25,7 @@
         }
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 650px;
             background: var(--card-bg);
             padding: 2.5rem;
             border-radius: 16px;
@@ -46,18 +46,24 @@
             background: white;
             cursor: pointer;
         }
-        h1 { color: var(--primary); font-size: 1.6rem; text-align: center; margin-bottom: 0.3rem; }
+        h1 { color: var(--primary); font-size: 1.5rem; text-align: center; margin-bottom: 0.3rem; }
         .subtitle { text-align: center; color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem; }
         .form-group { margin-bottom: 1.2rem; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
         input, select { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 0.95rem; }
         button { background: var(--primary); color: white; border: none; padding: 0.85rem; width: 100%; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; margin-top: 1rem; transition: background 0.2s; }
         button:hover { background: #1e40af; }
+        .btn-secondary { background: #64748b; }
+        .btn-secondary:hover { background: #475569; }
         .hidden { display: none; }
+        .theory-box { background: #f8fafc; border-left: 4px solid var(--primary); padding: 1.2rem; border-radius: 0 8px 8px 0; margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.5; }
         .exercise-box { background: #f1f5f9; padding: 1.5rem; border-radius: 10px; margin-top: 1rem; }
-        .feedback { margin-top: 1rem; font-weight: bold; text-align: center; }
-        .correct { color: #16a34a; }
-        .incorrect { color: #dc2626; }
+        .feedback { margin-top: 1rem; font-weight: bold; text-align: center; padding: 0.75rem; border-radius: 6px; }
+        .correct { color: #15803d; background: #dcfce7; }
+        .incorrect { color: #b91c1c; background: #fee2e2; }
+        .nav-buttons { display: flex; gap: 10px; margin-top: 1rem; }
+        .progress-text { font-size: 0.85rem; color: #64748b; font-weight: bold; margin-bottom: 0.5rem; }
+        .topic-selector { margin-bottom: 1rem; }
     </style>
 </head>
 <body>
@@ -78,7 +84,7 @@
             
             <div class="form-group">
                 <label for="access-code" id="lbl-code">Zugangsschlüssel (vom Lehrer bereitgestellt):</label>
-                <input type="password" id="access-code" placeholder="z. B. PROFE2026">
+                <input type="password" id="access-code" placeholder="z. B. ALUMNO123">
             </div>
             
             <div class="form-group">
@@ -95,52 +101,183 @@
             <button onclick="login()" id="btn-login">Kurs Betreten</button>
         </div>
 
-        <!-- PANTALLA DE EJERCICIOS -->
+        <!-- PANTALLA DE APRENDIZAJE Y EJERCICIOS -->
         <div id="app-screen" class="hidden">
-            <h1 id="app-title">Übungsmodul</h1>
-            <div id="explanation-box" style="background:#e0f2fe; padding:1rem; border-radius:8px; margin-bottom:1rem; font-size: 0.95rem;">
-                <!-- Explicación según nivel -->
+            <h1 id="app-title">Grammatik & Übungen</h1>
+            
+            <!-- Selector de Tema Gramatical -->
+            <div class="topic-selector">
+                <label for="topic-select" id="lbl-topic">Thema wählen:</label>
+                <select id="topic-select" onchange="changeTopic()"></select>
             </div>
 
+            <!-- Explicación Conceptual Profunda -->
+            <div id="theory-container" class="theory-box"></div>
+
+            <!-- Bloque de Ejercicios -->
             <div class="exercise-box">
+                <div id="progress-indicator" class="progress-text">Frage 1 von 2</div>
                 <h3 id="question-text">Frage wird geladen...</h3>
-                <div id="options-container">
-                    <!-- Respuestas o input -->
+                <div id="options-container"></div>
+                
+                <div class="nav-buttons">
+                    <button onclick="checkAnswer()" id="btn-check">Antwort Überprüfen</button>
+                    <button onclick="nextQuestion()" id="btn-next" class="btn-secondary hidden">Nächste Frage ➔</button>
                 </div>
-                <button onclick="checkAnswer()" id="btn-check">Antwort Überprüfen</button>
             </div>
-            <div id="feedback-message" class="feedback"></div>
-            <button onclick="logout()" id="btn-logout" style="background: #64748b; margin-top: 2rem;">Abmelden</button>
+
+            <div id="feedback-message" class="feedback hidden"></div>
+            <button onclick="logout()" id="btn-logout" class="btn-secondary" style="margin-top: 2rem;">Abmelden</button>
         </div>
     </div>
 
     <script>
-        // Lista de claves válidas que tus alumnos pueden usar
         const VALID_KEYS = ["ALUMNO123", "CURSO-DEUTSCH", "SPANIEN2026"];
 
-        // Diccionario de traducciones para la interfaz
+        const curriculum = {
+            A1: [
+                {
+                    id: "articulos",
+                    titleDe: "1. Artikel und Geschlecht (Artículos y Género)",
+                    titleEs: "1. Artículos y Género",
+                    theory: `<strong>Wie, wann und warum? (Concepto):</strong><br>
+                    Im Spanischen hat jedes Substantiv ein grammatikalisches Geschlecht: männlich (masculino) oder weiblich (femenino).<br>
+                    - <strong>Männliche Wörter</strong> enden meist auf <em>-o</em> (z.B. <em>el libro</em>).<br>
+                    - <strong>Weibliche Wörter</strong> enden meist auf <em>-a</em> (z.B. <em>la casa</em>).<br>
+                    Zudem unterscheiden wir zwischen bestimmten Artikeln (el/la/los/las = der/die/das) und unbestimmten Artikeln (un/una/unos/unas = ein/eine).`,
+                    questions: [
+                        { type: "choice", question: "Welcher Artikel passt zum Wort 'chica' (Mädchen)?", options: ["el", "la", "los"], answer: "la" },
+                        { type: "fill", question: "Schreiben Sie den bestimmten Artikel für 'libro' (Buch): ________ libro", answer: "el" }
+                    ]
+                },
+                {
+                    id: "plural",
+                    titleDe: "2. Pluralbildung (El Plural)",
+                    titleEs: "2. Formación del Plural",
+                    theory: `<strong>Wie, wann und warum? (Concepto):</strong><br>
+                    Wie macht man Mehrzahl im Spanischen?<br>
+                    - Wenn ein Wort auf einen <strong>unbetonten Vokal</strong> (a, e, i, o, u) endet, hängt man einfach ein <strong>-s</strong> an (z.B. <em>casa ➔ casas</em>).<br>
+                    - Wenn das Wort auf einen <strong>Konsonanten</strong> endet, hängt man <strong>-es</strong> an (z.B. <em>profesor ➔ profesores</em>).<br>
+                    Auch der Artikel ändert sich (el ➔ los, la ➔ las).`,
+                    questions: [
+                        { type: "fill", question: "Wie heißt der Plural von 'la casa'? Schreiben Sie den kompletten Ausdruck: ________", answer: "las casas" },
+                        { type: "choice", question: "Wählen Sie den richtigen Plural für 'el profesor':", options: ["el profesores", "los profesores", "las profesores"], answer: "los profesores" }
+                    ]
+                },
+                {
+                    id: "pronombres",
+                    titleDe: "3. Personalpronomen (Pronombres Personales)",
+                    titleEs: "3. Pronombres Personales",
+                    theory: `<strong>Wie, wann und warum? (Concepto):</strong><br>
+                    Personalpronomen ersetzen die Subjekte (ich, du, er...). Im Spanischen sind sie besonders wichtig für die Konjugation:<br>
+                    - <em>yo</em> (ich), <em>tú</em> (du - informell), <em>él/ella</em> (er/sie), <em>usted</em> (Sie - höflich).<br>
+                    - <em>nosotros/nosotras</em> (wir), <em>vosotros/vosotras</em> (ihr - in Spanien), <em>ellos/ellas</em> (sie), <em>ustedes</em> (Sie - Plural).<br>
+                    Oft lässt man das Pronomen im Spanischen weg, weil die Verbendendung schon zeigt, wer gemeint ist!`,
+                    questions: [
+                        { type: "choice", question: "Wie übersetzt man 'wir' ins Spanische?", options: ["vosotros", "nosotros", "ellos"], answer: "nosotros" },
+                        { type: "choice", question: "Welches Pronomen ist die höfliche Form für 'Sie' (singular)?", options: ["tú", "usted", "él"], answer: "usted" }
+                    ]
+                },
+                {
+                    id: "ser_estar",
+                    titleDe: "4. Die Verben SER und ESTAR (Sein)",
+                    titleEs: "4. Verbos Ser y Estar",
+                    theory: `<strong>Wie, wann und warum? (Concepto):</strong><br>
+                    Im Deutschen gibt es nur ein Verb ('sein'), aber im Spanischen gibt es zwei:<br>
+                    - <strong>SER:</strong> Wird für permanente Eigenschaften, Herkunft und Beruf verwendet (z.B. <em>Soy alemán</em>).<br>
+                    - <strong>ESTAR:</strong> Wird für vorübergehende Zustände und Orte verwendet (z.B. <em>Estoy cansado</em>).`,
+                    questions: [
+                        { type: "choice", question: "Wählen Sie das richtige Verb für den Beruf: 'Yo ________ profesor.'", options: ["soy", "estoy"], answer: "soy" },
+                        { type: "choice", question: "Wählen Sie das richtige Verb für einen Standort: 'Madrid ________ en España.'", options: ["es", "está"], answer: "está" }
+                    ]
+                }
+            ],
+            A2: [
+                {
+                    id: "pasado_indefinido",
+                    titleDe: "1. Das Präteritum (Pretérito Indefinido)",
+                    titleEs: "1. Pretérito Indefinido",
+                    theory: `<strong>Wie, wann und warum? (Concepto):</strong><br>
+                    Das <em>Pretérito Indefinido</em> wird für einmalige, abgeschlossene Handlungen in der Vergangenheit genutzt.`,
+                    questions: [
+                        { type: "choice", question: "Ayer yo ________ (comprar) un coche.", options: ["compré", "compró", "compras"], answer: "compré" }
+                    ]
+                }
+            ],
+            B1: [
+                {
+                    id: "indefinido_imperfecto",
+                    titleDe: "1. Indefinido vs. Imperfecto",
+                    titleEs: "1. Indefinido vs. Imperfecto",
+                    theory: `<strong>Explicación conceptual:</strong><br>
+                    Contraste entre acciones puntuales (Indefinido) y descripciones o hábitos (Imperfecto).`,
+                    questions: [
+                        { type: "choice", question: "Ayer mientras yo ________ (dormir), sonó el teléfono.", options: ["dormía", "dormí"], answer: "dormía" }
+                    ]
+                }
+            ],
+            B2: [
+                {
+                    id: "subjuntivo",
+                    titleDe: "1. El Presente de Subjuntivo",
+                    titleEs: "1. Presente de Subjuntivo",
+                    theory: `<strong>Explicación conceptual:</strong><br>
+                    Actitudes subjetivas, deseos y dudas (ej. <em>Quiero que vengas</em>).`,
+                    questions: [
+                        { type: "choice", question: "Espero que tú ________ (tener) un buen viaje.", options: ["tienes", "tengas", "tenías"], answer: "tengas" }
+                    ]
+                }
+            ],
+            C1: [
+                {
+                    id: "hipoteticas",
+                    titleDe: "1. Condicionales de Pasado",
+                    titleEs: "1. Condicionales de Pasado",
+                    theory: `<strong>Explicación conceptual:</strong><br>
+                    Estructuras complejas para hipótesis irreales en el pasado.`,
+                    questions: [
+                        { type: "choice", question: "Si lo ________ (saber), te ________ (avisar).", options: ["hubiera sabido / habría avisado", "supiera / avisaría"], answer: "hubiera sabido / habría avisado" }
+                    ]
+                }
+            ]
+        };
+
         const translations = {
             de: {
                 title: "Spanisch Sprachakademie",
                 subtitle: "Interaktive Grammatikplattform",
                 lblCode: "Zugangsschlüssel (vom Lehrer bereitgestellt):",
                 lblLevel: "Wählen Sie Ihr Niveau:",
+                lblTopic: "Thema wählen:",
                 btnLogin: "Kurs Betreten",
                 btnCheck: "Antwort Überprüfen",
+                btnNext: "Nächste Frage ➔",
                 btnLogout: "Abmelden",
-                placeholderCode: "z. B. ALUMNO123"
+                placeholderCode: "z. B. ALUMNO123",
+                correctMsg: "Richtig! Ausgezeichnete Arbeit.",
+                incorrectMsg: "Falsch. Die richtige Antwort ist: ",
+                progress: "Frage "
             },
             es: {
                 title: "Academia de Español",
                 subtitle: "Plataforma de Gramática Interactiva",
                 lblCode: "Clave de acceso (dada por el profesor):",
                 lblLevel: "Selecciona tu nivel:",
+                lblTopic: "Selecciona el tema:",
                 btnLogin: "Entrar al Curso",
                 btnCheck: "Comprobar Respuesta",
+                btnNext: "Siguiente Pregunta ➔",
                 btnLogout: "Cerrar Sesión",
-                placeholderCode: "Ej. ALUMNO123"
+                placeholderCode: "Ej. ALUMNO123",
+                correctMsg: "¡Correcto! Excelente trabajo.",
+                incorrectMsg: "Incorrecto. La respuesta correcta es: ",
+                progress: "Pregunta "
             }
         };
+
+        let currentLevel = "A1";
+        let currentTopicIndex = 0;
+        let currentQuestionIndex = 0;
 
         function changeInterfaceLanguage() {
             const lang = document.getElementById("interface-lang").value;
@@ -150,17 +287,20 @@
             document.getElementById("txt-subtitle").innerText = t.subtitle;
             document.getElementById("lbl-code").innerText = t.lblCode;
             document.getElementById("lbl-level").innerText = t.lblLevel;
+            document.getElementById("lbl-topic").innerText = t.lblTopic;
             document.getElementById("btn-login").innerText = t.btnLogin;
             document.getElementById("btn-check").innerText = t.btnCheck;
+            document.getElementById("btn-next").innerText = t.btnNext;
             document.getElementById("btn-logout").innerText = t.btnLogout;
             document.getElementById("access-code").placeholder = t.placeholderCode;
+            
+            updateTopicDropdown();
         }
 
         function login() {
-            const code = document.getElementById("access-code").value;
-            const level = document.getElementById("level-select").value;
+            const code = document.getElementById("access-code").value.trim();
+            currentLevel = document.getElementById("level-select").value;
 
-            // Validación correcta dentro de la función usando la lista de claves
             if (!VALID_KEYS.includes(code)) {
                 const currentLang = document.getElementById("interface-lang").value;
                 alert(currentLang === "de" ? "Falscher Schlüssel. Bitte fragen Sie Ihren Lehrer." : "Clave incorrecta. Solicítala a tu profesor.");
@@ -170,42 +310,118 @@
             document.getElementById("login-screen").classList.add("hidden");
             document.getElementById("app-screen").classList.remove("hidden");
 
-            loadContent(level);
+            currentTopicIndex = 0;
+            currentQuestionIndex = 0;
+            updateTopicDropdown();
+            loadTopicData();
         }
 
-        function loadContent(level) {
-            const titleElem = document.getElementById("app-title");
-            const explanationElem = document.getElementById("explanation-box");
-            const questionElem = document.getElementById("question-text");
-            const optionsContainer = document.getElementById("options-container");
+        function updateTopicDropdown() {
+            const topics = curriculum[currentLevel];
+            const select = document.getElementById("topic-select");
+            const lang = document.getElementById("interface-lang").value;
+            
+            select.innerHTML = "";
+            topics.forEach((topic, idx) => {
+                const opt = document.createElement("option");
+                opt.value = idx;
+                opt.innerText = lang === "de" ? topic.titleDe : topic.titleEs;
+                if (idx === currentTopicIndex) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
 
-            titleElem.innerText = `Niveau ${level} - Grammatik`;
-            optionsContainer.innerHTML = "";
+        function changeTopic() {
+            const select = document.getElementById("topic-select");
+            currentTopicIndex = parseInt(select.value);
+            currentQuestionIndex = 0;
+            loadTopicData();
+        }
 
-            if (level === "A1" || level === "A2") {
-                explanationElem.innerHTML = `<strong>Grammatik-Erklärung (${level}):</strong> Das Präsens von regelmäßigen Verben auf -ar (z.B. <em>hablar</em>).<br><br>Endungen: <em>yo -o, tú -as, él/ella -a, nosotros -amos, vosotros -áis, ellos -an</em>.`;
-                questionElem.innerText = "Füllen Sie die Lücke aus: Yo (hablar) español.";
-                
-                optionsContainer.innerHTML = `
-                    <input type="text" id="user-answer" placeholder="Ihre Antwort hier...">
-                `;
-            } else {
-                explanationElem.innerHTML = `<strong>Explicación gramatical (${level}):</strong> Diferencia y uso de los pasados (Pretérito Indefinido vs. Pretérito Imperfecto).`;
-                questionElem.innerText = "Selecciona la opción correcta:";
-                
-                optionsContainer.innerHTML = `
-                    <label style="display:block; margin-bottom:0.5rem;"><input type="radio" name="opt" value="1"> Ayer cuando llegué, todos ya dormían.</label>
-                    <label style="display:block;"><input type="radio" name="opt" value="2"> Ayer cuando llegaba, todos ya durmieron.</label>
-                `;
+        function loadTopicData() {
+            const topics = curriculum[currentLevel];
+            const topic = topics[currentTopicIndex];
+            
+            document.getElementById("app-title").innerText = `Niveau ${currentLevel} - Grammatik`;
+            document.getElementById("theory-container").innerHTML = topic.theory;
+
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const topics = curriculum[currentLevel];
+            const topic = topics[currentTopicIndex];
+            const q = topic.questions[currentQuestionIndex];
+            const lang = document.getElementById("interface-lang").value;
+            const t = translations[lang];
+
+            document.getElementById("feedback-message").className = "feedback hidden";
+            document.getElementById("btn-check").classList.remove("hidden");
+            document.getElementById("btn-next").classList.add("hidden");
+
+            document.getElementById("progress-indicator").innerText = `${t.progress} ${currentQuestionIndex + 1} / ${topic.questions.length}`;
+            document.getElementById("question-text").innerText = q.question;
+
+            const container = document.getElementById("options-container");
+            container.innerHTML = "";
+
+            if (q.type === "fill") {
+                container.innerHTML = `<input type="text" id="user-input" placeholder="${lang === 'de' ? 'Ihre Antwort hier...' : 'Tu respuesta aquí...'}" autocomplete="off">`;
+            } else if (q.type === "choice") {
+                q.options.forEach((opt) => {
+                    container.innerHTML += `
+                        <label style="display:block; margin-bottom:0.6rem; cursor:pointer;">
+                            <input type="radio" name="option" value="${opt}"> ${opt}
+                        </label>
+                    `;
+                });
             }
         }
 
         function checkAnswer() {
-            const feedback = document.getElementById("feedback-message");
+            const topics = curriculum[currentLevel];
+            const topic = topics[currentTopicIndex];
+            const q = topic.questions[currentQuestionIndex];
             const lang = document.getElementById("interface-lang").value;
-            
-            feedback.innerText = lang === "de" ? "Richtig! Ausgezeichnete Arbeit." : "¡Correcto! Excelente trabajo.";
-            feedback.className = "feedback correct";
+            const t = translations[lang];
+            const feedback = document.getElementById("feedback-message");
+
+            let userAnswer = "";
+
+            if (q.type === "fill") {
+                const input = document.getElementById("user-input");
+                userAnswer = input ? input.value.trim() : "";
+            } else if (q.type === "choice") {
+                const selected = document.querySelector('input[name="option"]:checked');
+                userAnswer = selected ? selected.value : "";
+            }
+
+            if (!userAnswer) {
+                alert(lang === "de" ? "Bitte geben Sie eine Antwort ein." : "Por favor, selecciona o escribe una respuesta.");
+                return;
+            }
+
+            const isCorrect = userAnswer.toLowerCase() === q.answer.toLowerCase();
+
+            feedback.classList.remove("hidden");
+            if (isCorrect) {
+                feedback.innerText = t.correctMsg;
+                feedback.className = "feedback correct";
+            } else {
+                feedback.innerText = `${t.incorrectMsg} "${q.answer}"`;
+                feedback.className = "feedback incorrect";
+            }
+
+            document.getElementById("btn-check").classList.add("hidden");
+
+            if (currentQuestionIndex < topic.questions.length - 1) {
+                document.getElementById("btn-next").classList.remove("hidden");
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            renderQuestion();
         }
 
         function logout() {
