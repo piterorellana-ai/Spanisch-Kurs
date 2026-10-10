@@ -115,13 +115,9 @@
     </div>
 
     <script>
-        const VALID_KEY = ["ALUMNO123", "CURSO-DEUTSCH", "SPANIEN2026"];
-        if (!VALID_KEYS.includes(code)) {
-            alert("Clave incorrecta. Solicítala a tu profesor.");
-            return:
-                }
+        // Lista de claves válidas que tus alumnos pueden usar
+        const VALID_KEYS = ["ALUMNO123", "CURSO-DEUTSCH", "SPANIEN2026"];
 
-        
         // Diccionario de traducciones para la interfaz
         const translations = {
             de: {
@@ -132,7 +128,7 @@
                 btnLogin: "Kurs Betreten",
                 btnCheck: "Antwort Überprüfen",
                 btnLogout: "Abmelden",
-                placeholderCode: "z. B. PROFE2026"
+                placeholderCode: "z. B. ALUMNO123"
             },
             es: {
                 title: "Academia de Español",
@@ -142,7 +138,7 @@
                 btnLogin: "Entrar al Curso",
                 btnCheck: "Comprobar Respuesta",
                 btnLogout: "Cerrar Sesión",
-                placeholderCode: "Ej. PROFE2026"
+                placeholderCode: "Ej. ALUMNO123"
             }
         };
 
@@ -164,7 +160,8 @@
             const code = document.getElementById("access-code").value;
             const level = document.getElementById("level-select").value;
 
-            if (code !== VALID_KEY) {
+            // Validación correcta dentro de la función usando la lista de claves
+            if (!VALID_KEYS.includes(code)) {
                 const currentLang = document.getElementById("interface-lang").value;
                 alert(currentLang === "de" ? "Falscher Schlüssel. Bitte fragen Sie Ihren Lehrer." : "Clave incorrecta. Solicítala a tu profesor.");
                 return;
